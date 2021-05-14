@@ -118,7 +118,8 @@ class BirthdayService {
 		];
 
 		foreach ($targetPrincipals as $principalUri) {
-			if (!$this->isUserEnabled($principalUri)) {
+			$userId = $this->userIdFromPrincipalUri($principalUri);
+			if (!$this->isUserEnabled($userId)) {
 				continue;
 			}
 
@@ -143,7 +144,8 @@ class BirthdayService {
 		$book = $this->cardDavBackEnd->getAddressBookById($addressBookId);
 		$targetPrincipals[] = $book['principaluri'];
 		foreach ($targetPrincipals as $principalUri) {
-			if (!$this->isUserEnabled($principalUri)) {
+			$userId = $this->userIdFromPrincipalUri($principalUri);
+			if (!$this->isUserEnabled($userId)) {
 				continue;
 			}
 
@@ -423,18 +425,25 @@ class BirthdayService {
 	/**
 	 * Checks if the user opted-out of birthday calendars
 	 *
-	 * @param string $userPrincipal The user principal to check for
+	 * @param string $userId
 	 * @return bool
 	 */
-	private function isUserEnabled(string $userPrincipal):bool {
-		if (strpos($userPrincipal, 'principals/users/') === 0) {
-			$userId = substr($userPrincipal, 17);
+	private function isUserEnabled(?string $userId):bool {
+		if ($userId !== null) {
 			$isEnabled = $this->config->getUserValue($userId, 'dav', 'generateBirthdayCalendar', 'yes');
 			return $isEnabled === 'yes';
 		}
 
 		// not sure how we got here, just be on the safe side and return true
 		return true;
+	}
+
+	private function userIdFromPrincipalUri(string $principalUri): ?string {
+		$userId = null;
+		if (strpos($principalUri, 'principals/users/') === 0) {
+			$userId = substr($principalUri, 17);
+		}
+		return $userId;
 	}
 
 	/**
