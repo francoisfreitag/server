@@ -93,6 +93,38 @@ exports[`CalDavSettings interactions 1`] = `
     <p>
       <input
         class="checkbox"
+        id="caldavGenerateBirthdayCalendarAlarms"
+        type="checkbox"
+      />
+       
+      <label
+        for="caldavGenerateBirthdayCalendarAlarms"
+      >
+        
+			Set a reminder on birthday calendar events
+		
+      </label>
+       
+      <br />
+       
+      <em>
+        Reminders trigger at midnight on the day of the event.
+      </em>
+      <br />
+       
+      <em>
+        Changes to this setting require regenerating calendars in a background job.
+      </em>
+      <br />
+       
+      <em>
+        Hence changes will not be available immediately.
+      </em>
+    </p>
+     
+    <p>
+      <input
+        class="checkbox"
         id="caldavSendEventReminders"
         type="checkbox"
       />

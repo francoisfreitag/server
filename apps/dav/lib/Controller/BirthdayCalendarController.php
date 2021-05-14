@@ -113,4 +113,21 @@ class BirthdayCalendarController extends Controller {
 
 		return new JSONResponse([]);
 	}
+
+	/**
+	 * @return JSONResponse
+	 */
+	public function alarms(string $value) {
+		$value = $value === 'yes' ? 'yes' : 'no';
+		$this->config->setAppValue($this->appName, 'birthdayCalendarCreateAlarm', $value);
+
+		// Regenerate calendar events for each user in the background.
+		$this->userManager->callForSeenUsers(function (IUser $user) {
+			$this->jobList->add(GenerateBirthdayCalendarBackgroundJob::class, [
+				'userId' => $user->getUID(),
+				'purgeBeforeGenerating' => true,
+			]);
+		});
+		return new JSONResponse([]);
+	}
 }

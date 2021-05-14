@@ -125,7 +125,7 @@ class BirthdayService {
 
 			$calendar = $this->ensureCalendarExists($principalUri);
 			foreach ($datesToSync as $type) {
-				$this->updateCalendar($cardUri, $cardData, $book, (int) $calendar['id'], $type);
+				$this->updateCalendar($userId, $cardUri, $cardData, $book, (int) $calendar['id'], $type);
 			}
 		}
 	}
@@ -177,13 +177,15 @@ class BirthdayService {
 	}
 
 	/**
+	 * @param $userId
 	 * @param $cardData
 	 * @param $dateField
 	 * @param $postfix
 	 * @return VCalendar|null
 	 * @throws InvalidDataException
 	 */
-	public function buildDateFromContact(string $cardData,
+	public function buildDateFromContact(string $userId,
+										 string $cardData,
 										 string $dateField,
 										 string $postfix):?VCalendar {
 		if (empty($cardData)) {
@@ -290,11 +292,13 @@ class BirthdayService {
 		if ($originalYear !== null) {
 			$vEvent->{'X-NEXTCLOUD-BC-YEAR'} = (string) $originalYear;
 		}
-		$alarm = $vCal->createComponent('VALARM');
-		$alarm->add($vCal->createProperty('TRIGGER', '-PT0M', ['VALUE' => 'DURATION']));
-		$alarm->add($vCal->createProperty('ACTION', 'DISPLAY'));
-		$alarm->add($vCal->createProperty('DESCRIPTION', $vEvent->{'SUMMARY'}));
-		$vEvent->add($alarm);
+		if ($this->shouldCreateAlarm($userId)) {
+			$alarm = $vCal->createComponent('VALARM');
+			$alarm->add($vCal->createProperty('TRIGGER', '-PT0M', ['VALUE' => 'DURATION']));
+			$alarm->add($vCal->createProperty('ACTION', 'DISPLAY'));
+			$alarm->add($vCal->createProperty('DESCRIPTION', $vEvent->{'SUMMARY'}));
+			$vEvent->add($alarm);
+		}
 		$vCal->add($vEvent);
 		return $vCal;
 	}
@@ -376,13 +380,14 @@ class BirthdayService {
 	 * @throws InvalidDataException
 	 * @throws \Sabre\DAV\Exception\BadRequest
 	 */
-	private function updateCalendar(string $cardUri,
+	private function updateCalendar(string $userId,
+									string $cardUri,
 									string $cardData,
 									array $book,
 									int $calendarId,
 									array $type):void {
 		$objectUri = $book['uri'] . '-' . $cardUri . $type['postfix'] . '.ics';
-		$calendarData = $this->buildDateFromContact($cardData, $type['field'], $type['postfix']);
+		$calendarData = $this->buildDateFromContact($userId, $cardData, $type['field'], $type['postfix']);
 		$existing = $this->calDavBackEnd->getCalendarObject($calendarId, $objectUri);
 		if ($calendarData === null) {
 			if ($existing !== null) {
@@ -436,6 +441,21 @@ class BirthdayService {
 
 		// not sure how we got here, just be on the safe side and return true
 		return true;
+	}
+
+	/**
+	 * Checks if the user wants alarms for birthdays
+	 *
+	 * @param string $userId
+	 * @return bool
+	 */
+	private function shouldCreateAlarm(string $userId):bool {
+		$config_key = 'birthdayCalendarCreateAlarm';
+		$createAlarm = $this->config->getUserValue($userId, 'dav', $config_key, null);
+		if ($createAlarm === null) {
+			$createAlarm = $this->config->getAppValue('dav', $config_key, 'no');
+		}
+		return $createAlarm === 'yes';
 	}
 
 	private function userIdFromPrincipalUri(string $principalUri): ?string {

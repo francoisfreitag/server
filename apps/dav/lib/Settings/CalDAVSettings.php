@@ -54,6 +54,7 @@ class CalDAVSettings implements ISettings {
 		$defaults = [
 			'sendInvitations' => 'yes',
 			'generateBirthdayCalendar' => 'yes',
+			'generateBirthdayCalendarAlarms' => 'yes',
 			'sendEventReminders' => 'yes',
 			'sendEventRemindersPush' => 'no',
 		];

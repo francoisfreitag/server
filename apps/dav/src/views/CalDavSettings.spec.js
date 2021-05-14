@@ -39,6 +39,7 @@ describe('CalDavSettings', () => {
 					return {
 						sendInvitations: true,
 						generateBirthdayCalendar: true,
+						generateBirthdayCalendarAlarms: true,
 						sendEventReminders: true,
 						sendEventRemindersPush: true,
 					}
@@ -57,6 +58,10 @@ describe('CalDavSettings', () => {
 			'Automatically generate a birthday calendar'
 		)
 		expect(generateBirthdayCalendar).toBeChecked()
+		const generateBirthdayCalendarAlarms = TLUtils.getByLabelText(
+			'Set a reminder on birthday calendar events'
+		)
+		expect(generateBirthdayCalendarAlarms).toBeChecked()
 		const sendEventReminders = TLUtils.getByLabelText(
 			'Send notifications for events'
 		)
@@ -82,17 +87,33 @@ describe('CalDavSettings', () => {
 			'yes'
 		)
 
-		axios.post.mockImplementationOnce((uri) => {
+		axios.post.mockImplementationOnce(uri => {
 			expect(uri).toBe('/apps/dav/disableBirthdayCalendar')
 			return Promise.resolve()
 		})
 		await userEvent.click(generateBirthdayCalendar)
-		axios.post.mockImplementationOnce((uri) => {
+		expect(generateBirthdayCalendarAlarms).toBeDisabled()
+
+		axios.post.mockImplementationOnce(uri => {
 			expect(uri).toBe('/apps/dav/enableBirthdayCalendar')
 			return Promise.resolve()
 		})
 		await userEvent.click(generateBirthdayCalendar)
 		expect(generateBirthdayCalendar).toBeEnabled()
+
+		axios.post.mockImplementationOnce((uri, data) => {
+			expect(uri).toBe('/apps/dav/birthdayCalendarAlarms')
+			expect(data).toStrictEqual({ value: 'no' })
+			return Promise.resolve()
+		})
+		await userEvent.click(generateBirthdayCalendarAlarms)
+		axios.post.mockImplementationOnce((uri, data) => {
+			expect(uri).toBe('/apps/dav/birthdayCalendarAlarms')
+			expect(data).toStrictEqual({ value: 'yes' })
+			return Promise.resolve()
+		})
+		await userEvent.click(generateBirthdayCalendarAlarms)
+		expect(generateBirthdayCalendarAlarms).toBeEnabled()
 
 		OCP.AppConfig.setValue.mockClear()
 		await userEvent.click(sendEventReminders)

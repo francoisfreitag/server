@@ -121,4 +121,72 @@ class BirthdayCalendarControllerTest extends TestCase {
 		$response = $this->controller->disable();
 		$this->assertInstanceOf('OCP\AppFramework\Http\JSONResponse', $response);
 	}
+
+	public function testEnableAlarms() {
+		$this->config->expects($this->once())
+			->method('setAppValue')
+			->with('dav', 'birthdayCalendarCreateAlarm', 'yes');
+
+		$this->userManager->expects($this->once())
+			->method('callForSeenUsers')
+			->willReturnCallback(function ($closure) {
+				$user1 = $this->createMock(IUser::class);
+				$user1->method('getUID')->willReturn('uid1');
+				$user2 = $this->createMock(IUser::class);
+				$user2->method('getUID')->willReturn('uid2');
+
+				$closure($user1);
+				$closure($user2);
+			});
+
+		$this->jobList->expects($this->exactly(2))
+			->method('add')
+			->withConsecutive(
+				[
+					GenerateBirthdayCalendarBackgroundJob::class,
+					['userId' => 'uid1', 'purgeBeforeGenerating' => true],
+				],
+				[
+					GenerateBirthdayCalendarBackgroundJob::class,
+					['userId' => 'uid2', 'purgeBeforeGenerating' => true],
+				],
+			);
+
+		$response = $this->controller->alarms('yes');
+		$this->assertInstanceOf('OCP\AppFramework\Http\JSONResponse', $response);
+	}
+
+	public function testDisableAlarms() {
+		$this->config->expects($this->once())
+			->method('setAppValue')
+			->with('dav', 'birthdayCalendarCreateAlarm', 'no');
+
+		$this->userManager->expects($this->once())
+			->method('callForSeenUsers')
+			->willReturnCallback(function ($closure) {
+				$user1 = $this->createMock(IUser::class);
+				$user1->method('getUID')->willReturn('uid1');
+				$user2 = $this->createMock(IUser::class);
+				$user2->method('getUID')->willReturn('uid2');
+
+				$closure($user1);
+				$closure($user2);
+			});
+
+		$this->jobList->expects($this->exactly(2))
+			->method('add')
+			->withConsecutive(
+				[
+					GenerateBirthdayCalendarBackgroundJob::class,
+					['userId' => 'uid1', 'purgeBeforeGenerating' => true],
+				],
+				[
+					GenerateBirthdayCalendarBackgroundJob::class,
+					['userId' => 'uid2', 'purgeBeforeGenerating' => true],
+				],
+			);
+
+		$response = $this->controller->alarms('no');
+		$this->assertInstanceOf('OCP\AppFramework\Http\JSONResponse', $response);
+	}
 }

@@ -42,6 +42,21 @@
 		</p>
 		<p>
 			<input
+				id="caldavGenerateBirthdayCalendarAlarms"
+				v-model="generateBirthdayCalendarAlarms"
+				:disabled="!generateBirthdayCalendar"
+				type="checkbox"
+				class="checkbox">
+			<label for="caldavGenerateBirthdayCalendarAlarms">
+				{{ $t('dav', 'Set a reminder on birthday calendar events') }}
+			</label>
+			<br>
+			<em>{{ $t('dav', 'Reminders trigger at midnight on the day of the event.') }}</em><br>
+			<em>{{ $t('dav', 'Changes to this setting require regenerating calendars in a background job.') }}</em><br>
+			<em>{{ $t('dav', 'Hence changes will not be available immediately.') }}</em>
+		</p>
+		<p>
+			<input
 				id="caldavSendEventReminders"
 				v-model="sendEventReminders"
 				type="checkbox"
@@ -108,6 +123,12 @@ export default {
 		generateBirthdayCalendar(value) {
 			const baseUrl = value ? '/apps/dav/enableBirthdayCalendar' : '/apps/dav/disableBirthdayCalendar'
 			axios.post(generateUrl(baseUrl))
+		},
+		generateBirthdayCalendarAlarms(value) {
+			axios.post(
+				generateUrl('/apps/dav/birthdayCalendarAlarms'),
+				{ value: value ? 'yes' : 'no' }
+			)
 		},
 		sendInvitations(value) {
 			OCP.AppConfig.setValue(

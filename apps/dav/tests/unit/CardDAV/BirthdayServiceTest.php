@@ -86,7 +86,9 @@ class BirthdayServiceTest extends TestCase {
 	 */
 	public function testBuildBirthdayFromContact($expectedSummary, $expectedDTStart, $expectedFieldType, $expectedUnknownYear, $expectedOriginalYear, $data, $fieldType, $prefix, $supports4Bytes) {
 		$this->dbConnection->method('supports4ByteText')->willReturn($supports4Bytes);
-		$cal = $this->service->buildDateFromContact($data, $fieldType, $prefix);
+		$this->config->method('getUserValue')->willReturn('no');
+		$userId = 'user01';
+		$cal = $this->service->buildDateFromContact($userId, $data, $fieldType, $prefix);
 
 		if ($expectedSummary === null) {
 			$this->assertNull($cal);
@@ -375,6 +377,42 @@ class BirthdayServiceTest extends TestCase {
 		$this->service->resetForUser('user123');
 	}
 
+	/**
+	 * @dataProvider providesAlarm
+	 */
+	public function testGenerateAlarm($userAlarm, $appAlarm, $expected) {
+		$data = "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:19000101\r\nEND:VCARD\r\n";
+
+		$userId = 'user01';
+		$this->config->method('getUserValue')
+			   ->with($userId, 'dav', 'birthdayCalendarCreateAlarm', null)
+			   ->willReturn($userAlarm);
+		$this->config->method('getAppValue')
+			   ->with('dav', 'birthdayCalendarCreateAlarm', 'no')
+			   ->willReturn($appAlarm);
+
+		$fieldType = 'BDAY';
+		$prefix = '';
+		$cal = $this->service->buildDateFromContact($userId, $data, $fieldType, $prefix);
+
+		if ($expected === 'yes') {
+			$this->assertSame('-PT0M', $cal->VEVENT->VALARM->TRIGGER->getValue());
+		} else {
+			$this->assertObjectNotHasAttribute('VALARM', $cal->VEVENT);
+		}
+
+		$this->assertInstanceOf('Sabre\VObject\Component\VCalendar', $cal);
+		$this->assertSame('-//IDN nextcloud.com//Birthday calendar//EN', $cal->PRODID->getValue());
+		$this->assertTrue(isset($cal->VEVENT));
+		$this->assertSame('FREQ=YEARLY', $cal->VEVENT->RRULE->getValue());
+		$this->assertSame('12345 (*1900)', $cal->VEVENT->SUMMARY->getValue());
+		$this->assertSame('19700101', $cal->VEVENT->DTSTART->getValue());
+		$this->assertSame('BDAY', $cal->VEVENT->{'X-NEXTCLOUD-BC-FIELD-TYPE'}->getValue());
+		$this->assertSame('0', $cal->VEVENT->{'X-NEXTCLOUD-BC-UNKNOWN-YEAR'}->getValue());
+		$this->assertSame('1900', $cal->VEVENT->{'X-NEXTCLOUD-BC-YEAR'}->getValue());
+		$this->assertSame('TRANSPARENT', $cal->VEVENT->TRANSP->getValue());
+	}
+
 	public function providesBirthday() {
 		return [
 			[true,
@@ -425,6 +463,18 @@ class BirthdayServiceTest extends TestCase {
 			[null, null, null, null, null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:;VALUE=text:circa 1800\r\nEND:VCARD\r\n", 'BDAY', '', false],
 			[null, null, null, null, null, "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nN:12345;;;;\r\nBDAY:20031231\r\nEND:VCARD\r\n", 'BDAY', '', false],
 			['12345 (*900)', '19701231', 'BDAY', '0', '900', "BEGIN:VCARD\r\nVERSION:3.0\r\nPRODID:-//Sabre//Sabre VObject 4.1.1//EN\r\nUID:12345\r\nFN:12345\r\nN:12345;;;;\r\nBDAY:09001231\r\nEND:VCARD\r\n", 'BDAY', '', false],
+		];
+	}
+
+	public function providesAlarm():array {
+		return [
+			// $userAlarm, $appAlarm, $expected
+			['yes', 'no', 'yes'],
+			['no', 'yes', 'no'],
+			[null, 'yes', 'yes'],
+			[null, 'no', 'no'],
+			['no', null, 'no'],
+			['yes', null, 'yes'],
 		];
 	}
 }

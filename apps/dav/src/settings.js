@@ -15,6 +15,10 @@ const CalDavSettingsView = new View({
 				'dav',
 				'generateBirthdayCalendar'
 			),
+			generateBirthdayCalendarAlarms: loadState(
+				'dav',
+				'generateBirthdayCalendarAlarms'
+			),
 			sendEventReminders: loadState('dav', 'sendEventReminders'),
 			sendEventRemindersPush: loadState('dav', 'sendEventRemindersPush'),
 		}
