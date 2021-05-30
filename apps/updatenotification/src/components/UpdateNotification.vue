@@ -93,7 +93,9 @@
 		<span id="channel_save_msg" class="msg" /><br>
 		<p>
 			<em>{{ t('updatenotification', 'You can always update to a newer version. But you can never downgrade to a more stable version.') }}</em><br>
-			<em v-html="noteDelayedStableString" />
+			<em>
+				<RichText :text="noteDelayedStableString" :autolink="true" />
+			</em>
 		</p>
 
 		<p id="oca_updatenotification_groups">
@@ -115,6 +117,7 @@
 import { generateUrl, getRootUrl, generateOcsUrl } from '@nextcloud/router'
 import PopoverMenu from '@nextcloud/vue/dist/Components/PopoverMenu'
 import Multiselect from '@nextcloud/vue/dist/Components/Multiselect'
+import RichText from '@juliushaertl/vue-richtext'
 import { VTooltip } from 'v-tooltip'
 import ClickOutside from 'vue-click-outside'
 
@@ -125,6 +128,7 @@ export default {
 	components: {
 		Multiselect,
 		PopoverMenu,
+		RichText,
 	},
 	directives: {
 		ClickOutside,
@@ -174,8 +178,7 @@ export default {
 		},
 
 		noteDelayedStableString() {
-			return t('updatenotification', 'Note that after a new release the update only shows up after the first minor release or later. We roll out new versions spread out over time to our users and sometimes skip a version when issues are found. Learn more about updates and release channels at {link}')
-				.replace('{link}', '<a href="https://nextcloud.com/release-channels/">https://nextcloud.com/release-channels/</a>')
+			return t('updatenotification', 'Note that after a new release the update only shows up after the first minor release or later. We roll out new versions spread out over time to our users and sometimes skip a version when issues are found. Learn more about updates and release channels at https://nextcloud.com/release-channels/')
 		},
 
 		lastCheckedOnString() {
